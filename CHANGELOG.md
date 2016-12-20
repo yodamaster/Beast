@@ -2,6 +2,7 @@
 
 * Tidy up tests and docs
 * Add flat_streambuf
+* Add documentation building instructions
 
 API Changes:
 
