@@ -1,6 +1,7 @@
 1.0.0-b27
 
 * Tidy up tests and docs
+* Add flat_streambuf
 
 API Changes:
 
