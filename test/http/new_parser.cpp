@@ -12,6 +12,7 @@
 #include <beast/test/string_istream.hpp>
 #include <beast/test/string_ostream.hpp>
 #include <beast/test/yield_to.hpp>
+#include <beast/core/flat_streambuf.hpp>
 #include <beast/core/streambuf.hpp>
 
 namespace beast {
@@ -267,9 +268,13 @@ public:
     {
         beast::test::string_istream ss{get_io_service(), s};
         error_code ec;
-        streambuf buffer;
+    #if 1
+        streambuf dynabuf;
+    #else
+        flat_streambuf dynabuf;
+    #endif
         message<isRequest, str_body, fields> m;
-        new_read(ss, buffer, m, ec);
+        new_read(ss, dynabuf, m, ec);
         if(! BEAST_EXPECTS(! ec, ec.message()))
             return;
         pred(m);

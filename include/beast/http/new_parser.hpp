@@ -387,14 +387,7 @@ public:
     }
 
     template<class ConstBufferSequence>
-#if GENERATING_DOCS
     std::size_t
-#else
-    typename std::enable_if<
-        ! std::is_convertible<ConstBufferSequence,
-            boost::asio::const_buffer>::value,
-                std::size_t>::type
-#endif
     write(ConstBufferSequence const& buffers, error_code& ec)
     {
         using boost::asio::buffer_cast;
