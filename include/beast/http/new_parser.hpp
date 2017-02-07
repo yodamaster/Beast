@@ -397,6 +397,8 @@ public:
 #endif
     write(ConstBufferSequence const& buffers, error_code& ec)
     {
+        using boost::asio::buffer_cast;
+        using boost::asio::buffer_size;
         auto const it = buffers.begin();
         auto const last = buffers.end();
         if(it == last)
@@ -420,17 +422,6 @@ public:
             return 0;
         //parse_chunked(buffer, ec);
         return 0;
-    }
-
-    template<class ParseBuffer>
-    void
-    write(ParseBuffer& buffer, error_code& ec)
-    {
-        if(! (f_ & flagHeader))
-            return parse_header(buffer, ec);
-        if(! (f_ & flagChunked))
-            return;
-        parse_chunked(buffer, ec);
     }
 
     /** Indicate that the end of stream is reached.
@@ -904,6 +895,7 @@ private:
         using boost::asio::buffer_copy;
         using boost::asio::buffer_size;
         using boost::asio::buffers_begin;
+        using boost::asio::buffers_end;
         auto const first = buffers_begin(buffers);
         auto const last = buffers_end(buffers);
 
@@ -918,7 +910,7 @@ private:
         }
         skip_ = 0;
 
-        auto const n = result.last - first;
+        auto const n = result.second - first;
         p_ = new char[n];
         buffer_copy(buffer(p_, n), buffers);
         parse_header(p_, p_ + n, ec);
@@ -927,7 +919,6 @@ private:
         return n;
     }
 
-    template<class ConstBufferSequence>
     std::size_t
     try_header(
         char const* first, char const* last,
@@ -944,10 +935,10 @@ private:
         }
         skip_ = 0;
 
-        parse_header(first, result.last, ec);
+        parse_header(first, result.second, ec);
         if(ec)
             return 0;
-        return result.last - first;
+        return result.second - first;
     }
 
     void
@@ -963,7 +954,7 @@ private:
         parse_fields(it, ec);
         if(ec)
             return;
-        if(it != result.second)
+        if(it != last)
         {
             ec = error::bad_value;
             return;
@@ -971,47 +962,6 @@ private:
         impl().on_header(ec);
         if(ec)
             return;
-        buffer.consume(static_cast<
-            std::size_t>(result.second - first));
-        f_ |= flagHeader;
-    }
-
-    template<class ParseBuffer>
-    void
-    parse_header(ParseBuffer& buffer, error_code& ec)
-    {
-        using boost::asio::buffer_cast;
-        auto const n = buffer.size();
-        auto const first = buffer_cast<char const*>(buffer.data());
-        auto const last = first + n;
-        auto const result = find_2x_crlf(first + skip_, last);
-        if(result.first == last)
-        {
-            if(n)
-                skip_ = n - 3;
-            ec = error::need_more;
-            return;
-        }
-        skip_ = 0;
-
-        auto it = first;
-        parse_startline(it, ec,
-            std::integral_constant<bool, isRequest>{});
-        if(ec)
-            return;
-        parse_fields(it, ec);
-        if(ec)
-            return;
-        if(it != result.second)
-        {
-            ec = error::bad_value;
-            return;
-        }
-        impl().on_header(ec);
-        if(ec)
-            return;
-        buffer.consume(static_cast<
-            std::size_t>(result.second - first));
         f_ |= flagHeader;
     }
 

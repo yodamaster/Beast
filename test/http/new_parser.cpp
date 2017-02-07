@@ -12,6 +12,7 @@
 #include <beast/test/string_istream.hpp>
 #include <beast/test/string_ostream.hpp>
 #include <beast/test/yield_to.hpp>
+#include <beast/core/streambuf.hpp>
 
 namespace beast {
 namespace http {
@@ -65,10 +66,10 @@ struct str_body
 
 //------------------------------------------------------------------------------
 
-template<class SyncReadStream,
+template<class SyncReadStream, class DynamicBuffer,
     bool isRequest, class Body, class Fields>
 void
-read(SyncReadStream& stream, parse_buffer& buffer,
+new_read(SyncReadStream& stream, DynamicBuffer& dynabuf,
     message<isRequest, Body, Fields>& msg, error_code& ec)
 {
     using boost::asio::buffer_copy;
@@ -76,25 +77,35 @@ read(SyncReadStream& stream, parse_buffer& buffer,
     new_parser_v1<isRequest, Fields> p{msg};
 
     // Read and parse header
+    if(dynabuf.size() == 0)
+        goto do_read;
     for(;;)
     {
-        p.write(buffer, ec);
-        if(! ec)
-            break;
-        if(ec != error::need_more)
-            return;
-        ec = {};
+        {
+            auto n = p.write(dynabuf.data(), ec);
+            if(! ec)
+            {
+                dynabuf.consume(n);
+                break;
+            }
+            if(ec != error::need_more)
+                return;
+            ec = {};
+        }
+    do_read:
+        auto const len =
+            read_size_helper(dynabuf, 65536);
         auto const bytes_transferred =
-            stream.read_some(buffer.prepare(
-                buffer.size() + 1), ec);
+            stream.read_some(
+                dynabuf.prepare(len) , ec);
         if(ec)
             return;
-        buffer.commit(bytes_transferred);
+        dynabuf.commit(bytes_transferred);
     }
-
     typename Body::reader r{msg, p.content_length()};
 
     // Read and parse body
+#if 0
     while(! p.complete())
     {
         // maybe read chunk delimiter
@@ -150,6 +161,7 @@ read(SyncReadStream& stream, parse_buffer& buffer,
     r.finish(ec);
     if(ec)
         return;
+#endif
 }
 
 /// Efficiently relay one HTTP message between two peers
@@ -255,9 +267,9 @@ public:
     {
         beast::test::string_istream ss{get_io_service(), s};
         error_code ec;
-        parse_buffer buffer;
+        streambuf buffer;
         message<isRequest, str_body, fields> m;
-        read(ss, buffer, m, ec);
+        new_read(ss, buffer, m, ec);
         if(! BEAST_EXPECTS(! ec, ec.message()))
             return;
         pred(m);
