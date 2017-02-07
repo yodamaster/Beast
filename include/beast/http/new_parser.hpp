@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2016 Vinnie Falco (vinnie dot falco at gmail dot com)
+// Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -265,9 +265,9 @@ struct new_basic_parser_v1_base
     }
 };
 
-template<class Unsigned>
+template<class Iter, class Unsigned>
 bool
-parse_dec(char const* it, char const* last, Unsigned& v)
+parse_dec(Iter it, Iter last, Unsigned& v)
 {
     if(! detail::is_digit(*it))
         return false;
@@ -285,9 +285,9 @@ parse_dec(char const* it, char const* last, Unsigned& v)
     return true;
 }
 
-template<class Unsigned>
+template<class Iter, class Unsigned>
 bool
-parse_hex(char const*& it, Unsigned& v)
+parse_hex(Iter& it, Unsigned& v)
 {
     auto d = detail::unhex(*it);
     if(d == -1)
@@ -308,8 +308,11 @@ parse_hex(char const*& it, Unsigned& v)
 
 //------------------------------------------------------------------------------
 
-template<bool isRequest, class Derived>
-class new_basic_parser_v1 : private new_basic_parser_v1_base
+template<
+    bool isRequest,
+    class Derived>
+class new_basic_parser_v1
+    : private new_basic_parser_v1_base
 {
     static unsigned constexpr flagContentLength = 1;
     static unsigned constexpr flagChunked = 2;
@@ -324,6 +327,7 @@ class new_basic_parser_v1 : private new_basic_parser_v1_base
         (std::numeric_limits<std::uint64_t>::max)();
     std::uint32_t skip_ = 0;
     std::uint8_t f_ = 0;
+    char* p_ = nullptr;
 
 public:
     /** Returns `true` if a complete message has been received.
@@ -372,6 +376,25 @@ public:
     needs_eof() const
     {
         return ! (f_ & (flagChunked + flagContentLength));
+    }
+
+    template<class ConstBufferSequence>
+#if GENERATING_DOCS
+    std::size_t
+#else
+    typename std::enable_if<
+        ! std::is_convertible<ConstBufferSequence,
+            boost::asio::const_buffer>::value,
+                std::size_t>::type
+#endif
+    write(ConstBufferSequence const& buffers, error_code& ec)
+    {
+        if(! (f_ & flagHeader))
+            return parse_header_(buffers, ec);
+        if(! (f_ & flagChunked))
+            return 0;
+        //parse_chunked(buffer, ec);
+        return 0;
     }
 
     template<class ParseBuffer>
@@ -443,18 +466,6 @@ public:
     }
 
 private:
-    template<class T, class = beast::detail::void_t<>>
-    struct check_on_method : std::false_type {};
-
-    template<class T>
-    struct check_on_method<T, beast::detail::void_t<decltype(
-        //std::declval<T>().on_method()
-        std::declval<int>()
-            )>> : std::true_type {};
-
-    static_assert(check_on_method<Derived>::value,
-        "Missing void Derived::on_method(boost::string_ref, error_code&)");
-
     inline
     Derived&
     impl()
@@ -506,14 +517,14 @@ private:
         return tab[static_cast<std::uint8_t>(c)] != 0;
     }
 
+    template<class Iter>
     static
-    std::pair<char const*, char const*>
-    find_crlf(
-        char const* first, char const* last)
+    std::pair<Iter, Iter>
+    find_crlf(Iter first, Iter last)
     {
         static char const pat[] = "\r\n";
         static boost::algorithm::boyer_moore<
-            char const*> const bm(pat, pat+2);
+            char const*> const bm{pat, pat+2};
     #if BOOST_VERSION >= 106200
         return bm(first, last);
     #else
@@ -522,14 +533,14 @@ private:
     #endif
     }
 
+    template<class Iter>
     static
-    std::pair<char const*, char const*>
-    find_2x_crlf(
-        char const* first, char const* last)
+    std::pair<Iter, Iter>
+    find_2x_crlf(Iter first, Iter last)
     {
         static char const pat[] = "\r\n\r\n";
         static boost::algorithm::boyer_moore<
-            char const*> const bm(pat, pat+4);
+            char const*> const bm{pat, pat+4};
     #if BOOST_VERSION >= 106200
         return bm(first, last);
     #else
@@ -857,6 +868,14 @@ private:
             ec = {};
             return;
         }
+    }
+
+    template<class ConstBufferSequence>
+    void
+    parse_header_(
+        ConstBufferSequence const& buffers, error_code& ec)
+    {
+
     }
 
     template<class ParseBuffer>
