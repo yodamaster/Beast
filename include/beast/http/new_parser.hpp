@@ -17,8 +17,10 @@
 #include <beast/core/detail/clamp.hpp>
 #include <beast/core/detail/type_traits.hpp>
 #include <boost/algorithm/searching/boyer_moore.hpp>
+#include <boost/asio/buffers_iterator.hpp>
 #include <boost/version.hpp>
 #include <algorithm>
+#include <iterator>
 
 namespace beast {
 namespace http {
@@ -330,6 +332,12 @@ class new_basic_parser_v1
     char* p_ = nullptr;
 
 public:
+    ~new_basic_parser_v1()
+    {
+        if(p_)
+            delete[] p_;
+    }
+
     /** Returns `true` if a complete message has been received.
     */
     bool
@@ -389,8 +397,25 @@ public:
 #endif
     write(ConstBufferSequence const& buffers, error_code& ec)
     {
+        auto const it = buffers.begin();
+        auto const last = buffers.end();
+        if(it == last)
+        {
+            ec = error::need_more;
+            return 0;
+        }
         if(! (f_ & flagHeader))
-            return parse_header_(buffers, ec);
+        {
+            if(std::next(it) == last)
+            {
+                auto const b = *it;
+                return try_header(
+                    buffer_cast<char const*>(b),
+                    buffer_cast<char const*>(b) +
+                        buffer_size(b), ec);
+            }
+            return try_header(buffers, ec);
+        }
         if(! (f_ & flagChunked))
             return 0;
         //parse_chunked(buffer, ec);
@@ -871,11 +896,84 @@ private:
     }
 
     template<class ConstBufferSequence>
-    void
-    parse_header_(
+    std::size_t
+    try_header(
         ConstBufferSequence const& buffers, error_code& ec)
     {
+        using boost::asio::buffer;
+        using boost::asio::buffer_copy;
+        using boost::asio::buffer_size;
+        using boost::asio::buffers_begin;
+        auto const first = buffers_begin(buffers);
+        auto const last = buffers_end(buffers);
 
+        auto const result =
+            find_2x_crlf(first + skip_, last);
+        if(result.first == last)
+        {
+            if(first != last)
+                skip_ = buffer_size(buffers) - 3;
+            ec = error::need_more;
+            return 0;
+        }
+        skip_ = 0;
+
+        auto const n = result.last - first;
+        p_ = new char[n];
+        buffer_copy(buffer(p_, n), buffers);
+        parse_header(p_, p_ + n, ec);
+        // delete[] p_;  // ?
+        // p_ = nullptr; // ?
+        return n;
+    }
+
+    template<class ConstBufferSequence>
+    std::size_t
+    try_header(
+        char const* first, char const* last,
+            error_code& ec)
+    {
+        auto const result =
+            find_2x_crlf(first + skip_, last);
+        if(result.first == last)
+        {
+            if(first != last)
+                skip_ = (last - first) - 3;
+            ec = error::need_more;
+            return 0;
+        }
+        skip_ = 0;
+
+        parse_header(first, result.last, ec);
+        if(ec)
+            return 0;
+        return result.last - first;
+    }
+
+    void
+    parse_header(
+        char const* first, char const* last,
+            error_code& ec)
+    {
+        auto it = first;
+        parse_startline(it, ec,
+            std::integral_constant<bool, isRequest>{});
+        if(ec)
+            return;
+        parse_fields(it, ec);
+        if(ec)
+            return;
+        if(it != result.second)
+        {
+            ec = error::bad_value;
+            return;
+        }
+        impl().on_header(ec);
+        if(ec)
+            return;
+        buffer.consume(static_cast<
+            std::size_t>(result.second - first));
+        f_ |= flagHeader;
     }
 
     template<class ParseBuffer>
