@@ -136,6 +136,35 @@ public:
             BEAST_EXPECT(m.body == "*");
         }
         {
+            // test partial parsing of final chunk
+            // parse through the chunk body
+            streambuf sb;
+            sb <<
+                "PUT / HTTP/1.1\r\n"
+                "Transfer-Encoding: chunked\r\n"
+                "\r\n"
+                "1\r\n"
+                "*";
+            error_code ec;
+            message_parser<true, string_body, fields> p;
+            BEAST_EXPECT(p.write(sb.data(), ec) == sb.size());
+            sb.consume(sb.size());
+            BEAST_EXPECTS(! ec, ec.message());
+            BEAST_EXPECT(!p.is_done());
+            BEAST_EXPECT(p.get().body == "*");
+            sb << "\r\n0;d;e=3;f=\"4\"\r\n"
+                "Expires: never\r\n"
+                "MD5-Fingerprint: -\r\n";
+            // incomplete parse, missing the final crlf
+            BEAST_EXPECT(p.write(sb.data(), ec) == 0);
+            BEAST_EXPECTS(! ec, ec.message());
+            BEAST_EXPECT(!p.is_done());
+            sb << "\r\n"; // final crlf to end message
+            BEAST_EXPECT(p.write(sb.data(), ec) == sb.size());
+            BEAST_EXPECTS(! ec, ec.message());
+            BEAST_EXPECT(p.is_done());
+        }
+        {
             error_code ec;
             message_parser<false, string_body, fields> p;
             std::string const s =
