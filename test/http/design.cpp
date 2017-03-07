@@ -27,6 +27,7 @@ Parse states:
 
 */
 
+#if 0
 template<
     class SyncReadStream,
     class DynamicBuffer,
@@ -114,6 +115,7 @@ parse_body_direct(
     }
     }
 }
+#endif
 
 class design_test : public beast::unit_test::suite
 {
