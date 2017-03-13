@@ -62,6 +62,32 @@ public:
     explicit
     header_parser(Args&&... args);
 
+#if 0
+    /** Returns `true` if the parser requires additional input.
+
+        When this function returns `true`, the caller should
+        perform one of the following actions in order for the
+        parser to make forward progress:
+
+        @li Commit additional bytes to the stream buffer, then
+        call @ref write.
+
+        @li Call @ref write_eof to indicate that the stream
+        will never produce additional input.
+    */
+    bool
+    need_more() const
+    {
+        return ! this->got_header();
+    }
+
+    bool
+    is_done() const
+    {
+        return this->got_header();
+    }
+#endif
+
     /** Returns the parsed header
 
         Only valid if @ref got_header would return `true`.

@@ -10,9 +10,57 @@
 
 #include <beast/core/error.hpp>
 #include <beast/core/async_completion.hpp>
+#include <beast/http/header_parser.hpp>
 
 namespace beast {
 namespace http {
+
+#if 0
+/** Parse some HTTP/1 header data from a stream.
+*/
+template<class SyncReadStream, class DynamicBuffer,
+    bool isRequest, class Fields>
+void
+parse_some(SyncReadStream& stream, DynamicBuffer& dynabuf,
+    header_parser<isRequest, Fields>& parser,
+        error_code& ec);
+
+/** Parse an HTTP/1 header from a stream.
+*/
+template<class SyncReadStream, class DynamicBuffer,
+    bool isRequest, class Fields>
+void
+parse(SyncReadStream& stream, DynamicBuffer& dynabuf,
+    header_parser<isRequest, Fields>& parser,
+        error_code& ec);
+
+/** Start an asynchronous operation to parse some HTTP/1 header data from a stream.
+*/
+template<class AsyncReadStream, class DynamicBuffer,
+    bool isRequest, class Fields, class ReadHandler>
+#if GENERATING_DOCS
+void_or_deduced
+#else
+typename async_completion<
+    ReadHandler, void(error_code)>::result_type
+#endif
+async_parse_some(AsyncReadStream& stream,
+    DynamicBuffer& dynabuf,
+        header_parser<isRequest, Fields>& parser,
+            ReadHandler&& handler);
+
+/** Start an asynchronous operation to parse an HTTP/1 header data from a stream.
+*/
+template<class AsyncReadStream, class DynamicBuffer,
+    bool isRequest, class Fields, class ReadHandler>
+typename async_completion<
+    ReadHandler, void(error_code)>::result_type
+async_parse(AsyncReadStream& stream,
+    DynamicBuffer& dynabuf,
+        header_parser<isRequest, Fields>& parser,
+            ReadHandler&& handler);
+
+#endif
 
 /** Parse an object from a stream.
 
