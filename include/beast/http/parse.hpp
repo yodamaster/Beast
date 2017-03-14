@@ -11,6 +11,7 @@
 #include <beast/core/error.hpp>
 #include <beast/core/async_completion.hpp>
 #include <beast/http/header_parser.hpp>
+#include <beast/http/message_parser.hpp>
 
 namespace beast {
 namespace http {
@@ -61,6 +62,24 @@ async_parse(AsyncReadStream& stream,
             ReadHandler&& handler);
 
 #endif
+
+/** Parse some HTTP/1 message data from a stream.
+*/
+template<class SyncReadStream, class DynamicBuffer,
+    bool isRequest, class Body, class Fields>
+void
+parse_some(SyncReadStream& stream, DynamicBuffer& dynabuf,
+    message_parser<isRequest, Body, Fields>& parser,
+        error_code& ec);
+
+/** Parse an HTTP/1 message from a stream.
+*/
+template<class SyncReadStream, class DynamicBuffer,
+    bool isRequest, class Body, class Fields>
+void
+parse(SyncReadStream& stream, DynamicBuffer& dynabuf,
+    message_parser<isRequest, Body, Fields>& parser,
+        error_code& ec);
 
 /** Parse an object from a stream.
 
