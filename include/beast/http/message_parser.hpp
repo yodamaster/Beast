@@ -46,8 +46,12 @@ class message_parser
     boost::optional<typename Body::reader> r_;
 
 public:
-    /// The type of message returned by the parser.
+    /// The type of message returned by the parser
     using value_type = message<isRequest, Body, Fields>;
+
+    /// The type of buffer sequence representing the body
+    using mutable_buffers_type =
+        typename reader_type::mutable_buffers_type;
 
     /// Constructor (default)
     message_parser() = default;
@@ -103,6 +107,22 @@ public:
     message_parser(header_parser<
         isRequest, Fields>&& parser, Args&&... args);
 
+    bool
+    need_buffer() const
+    {
+        BOOST_ASSERT(state() != parse_state::complete);
+        switch(state())
+        {
+        case parse_state::header:
+        case parse_state::more_header:
+        case parse_state::chunk_header:
+            return true;
+        default:
+            break;
+        }
+        return false;
+    }
+
     /** Returns the parsed message.
 
         Depending on the progress of the parser, portions
@@ -143,14 +163,34 @@ public:
         return std::move(m_);
     }
 
+    /** Copy body bytes already present in the buffer.
+    */
     template<class DynamicBuffer>
-    typename reader_type::mutable_buffers_type
+    void
+    copy(DynamicBuffer& dynabuf)
+    {
+        using boost::asio::buffer_copy;
+        auto const n = (std::min)(
+            dynabuf.size(), this->remain());
+        if(n == 0)
+            return;
+        buffer_copy(
+            r_->prepare(len), dynabuf.data());
+        this->consume(len);
+        dynabuf.consume(len);
+        r_->commit(len);
+    }
+
+    template<class DynamicBuffer>
+    typename mutable_buffers_type
     prepare(DynamicBuffer& dynabuf, std::size_t limit)
     {
-        auto const n = this->remain();
-        if(n > limit)
-            return r_->prepare(limit);
-        return r_->prepare(static_cast<std::size_t>(n));
+        BOOST_ASSERT(limit > 0);
+        BOOST_ASSERT(this->remain() > 0);
+        auto const n = (std::min)(
+            static_cast<std::size_t>(
+                this->remain()), limit);
+        return r_->prepare(n);
     }
 
     void

@@ -110,6 +110,11 @@ basic_parser<isRequest, Derived>::
 write(boost::asio::const_buffers_1 const& buffer,
     error_code& ec)
 {
+    BOOST_ASSERT(
+        state() != parse_state::body &&
+        state() != parse_state::body_or_eof &&
+        state() != parse_state::chunk_body &&
+        state() != parse_state::complete);
     BOOST_ASSERT(! is_done());
     using boost::asio::buffer_cast;
     using boost::asio::buffer_size;
@@ -284,6 +289,7 @@ split(bool value)
 
 template<bool isRequest, class Derived>
 template<class ConstBufferSequence>
+inline
 boost::string_ref
 basic_parser<isRequest, Derived>::
 maybe_flatten(
