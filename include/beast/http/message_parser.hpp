@@ -184,10 +184,10 @@ private:
     }
 
     void
-    on_begin_body(error_code& ec)
+    on_begin_body(error_code&)
     {
         r_.emplace(m_);
-        r_->init(this->content_length(), ec);
+        r_->init(this->content_length());
     }
 
     void
@@ -199,30 +199,23 @@ private:
 
     void
     on_body(boost::string_ref const& data,
-        error_code& ec)
+        error_code&)
     {
         using boost::asio::buffer;
         using boost::asio::buffer_copy;
-        boost::optional<typename
-            reader_type::mutable_buffers_type> mb =
-                r_->prepare(data.size(), ec);
-        if(ec)
-            return;
-        BOOST_ASSERT(mb);
-        r_->commit(buffer_copy(*mb, buffer(
-            data.data(), data.size())), ec);
-        if(ec)
-            return;
+        r_->commit(buffer_copy(
+            r_->prepare(data.size()),
+                buffer(data.data(), data.size())));
     }
 
     void
-    on_end_body(error_code& ec)
+    on_end_body(error_code&)
     {
-        r_->finish(ec);
+        r_->finish();
     }
 
     void
-    on_end_message(error_code& ec)
+    on_end_message(error_code&)
     {
     }
 };

@@ -37,32 +37,6 @@ private:
     {
         value_type& body_;
 
-        template<class F>
-        static
-        void
-        tryf(error_code& ec, F&& f)
-        {
-            try
-            {
-                f();
-            }
-            catch(std::length_error const&)
-            {
-                ec = make_error_code(
-                    boost::system::errc::message_size);
-            }
-            catch(std::bad_alloc const&)
-            {
-                ec = make_error_code(
-                    boost::system::errc::not_enough_memory);
-            }
-            catch(std::exception const&)
-            {
-                ec = make_error_code(
-                    boost::system::errc::io_error);
-            }
-        }
-
     public:
         using mutable_buffers_type =
             typename DynamicBuffer::mutable_buffers_type;
@@ -77,43 +51,26 @@ private:
 
         void
         init(boost::optional<
-            std::uint64_t> const& content_length,
-                error_code& ec)
+            std::uint64_t> const& content_length)
         {
             beast::detail::ignore_unused(content_length);
-            beast::detail::ignore_unused(ec);
         }
 
-        boost::optional<mutable_buffers_type>
-        prepare(std::size_t n, error_code& ec)
+        mutable_buffers_type
+        prepare(std::size_t n)
         {
-            boost::optional<
-                mutable_buffers_type> result;
-            tryf(ec,
-                [&]()
-                {
-                    result.emplace(
-                        body_.prepare(n));
-                });
-            if(ec)
-                return body_.prepare(0);
-            return *result;
+            return body_.prepare(n);
         }
 
         void
-        commit(std::size_t n, error_code& ec)
+        commit(std::size_t n)
         {
-            tryf(ec,
-                [&]()
-                {
-                    body_.commit(n);
-                });
+            body_.commit(n);
         }
 
         void
-        finish(error_code& ec)
+        finish()
         {
-            beast::detail::ignore_unused(ec);
         }
     };
 

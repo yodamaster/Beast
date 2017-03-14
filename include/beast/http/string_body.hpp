@@ -38,32 +38,6 @@ private:
         value_type& body_;
         std::size_t len_ = 0;
 
-        template<class F>
-        static
-        void
-        tryf(error_code& ec, F&& f)
-        {
-            try
-            {
-                f();
-            }
-            catch(std::length_error const&)
-            {
-                ec = make_error_code(
-                    boost::system::errc::message_size);
-            }
-            catch(std::bad_alloc const&)
-            {
-                ec = make_error_code(
-                    boost::system::errc::not_enough_memory);
-            }
-            catch(std::exception const&)
-            {
-                ec = make_error_code(
-                    boost::system::errc::io_error);
-            }
-        }
-
     public:
         using mutable_buffers_type =
             boost::asio::mutable_buffers_1;
@@ -78,53 +52,36 @@ private:
 
         void
         init(boost::optional<
-            std::uint64_t> const& content_length,
-                error_code& ec)
+            std::uint64_t> const& content_length)
         {
             if(content_length)
             {
                 if(*content_length >
                         (std::numeric_limits<std::size_t>::max)())
-                {
-                    ec = make_error_code(
-                        boost::system::errc::message_size);
-                    return;
-                }
-                tryf(ec,
-                    [&]()
-                    {
-                        body_.reserve(static_cast<
-                            std::size_t>(*content_length));
-                    });
+                    throw std::length_error(
+                        "Content-Length max exceeded");
+                body_.reserve(static_cast<
+                    std::size_t>(*content_length));
             }
         }
 
-        boost::optional<mutable_buffers_type>
-        prepare(std::size_t n, error_code& ec)
+        mutable_buffers_type
+        prepare(std::size_t n)
         {
-            tryf(ec,
-                [&]()
-                {
-                    body_.resize(len_ + n);
-                });
-            return mutable_buffers_type{
-                &body_[len_], n};
+            body_.resize(len_ + n);
+            return {&body_[len_], n};
         }
 
         void
-        commit(std::size_t n, error_code& ec)
+        commit(std::size_t n)
         {
             if(body_.size() > len_ + n)
-                tryf(ec,
-                    [&]()
-                    {
-                        body_.resize(len_ + n);
-                    });
+                body_.resize(len_ + n);
             len_ = body_.size();
         }
 
         void
-        finish(error_code&)
+        finish()
         {
         }
     };

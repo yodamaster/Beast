@@ -29,80 +29,6 @@ class read_test
     , public test::enable_yield_to
 {
 public:
-    struct fail_body
-    {
-        class reader;
-
-        class value_type
-        {
-            friend class reader;
-
-            std::string s_;
-            test::fail_counter& fc_;
-
-        public:
-            explicit
-            value_type(test::fail_counter& fc)
-                : fc_(fc)
-            {
-            }
-
-            value_type&
-            operator=(std::string s)
-            {
-                s_ = std::move(s);
-                return *this;
-            }
-        };
-
-        class reader
-        {
-            value_type& body_;
-            std::unique_ptr<char[]> p_;
-
-        public:
-            using mutable_buffers_type =
-                boost::asio::mutable_buffers_1;
-
-            template<bool isRequest, class Allocator>
-            explicit
-            reader(message<isRequest,
-                    fail_body, Allocator>& msg) noexcept
-                : body_(msg.body)
-            {
-            }
-
-            void
-            init(boost::optional<
-                std::uint64_t> const&, error_code& ec) noexcept
-            {
-                body_.fc_.fail(ec);
-            }
-
-            boost::optional<mutable_buffers_type>
-            prepare(std::size_t n, error_code& ec)
-            {
-                if(body_.fc_.fail(ec))
-                    return {};
-                p_.reset(new char[n]);
-                return mutable_buffers_type{
-                    p_.get(), n};
-            }
-
-            void
-            commit(std::size_t n, error_code& ec)
-            {
-                body_.fc_.fail(ec);
-            }
-
-            void
-            finish(error_code& ec)
-            {
-                body_.fc_.fail(ec);
-            }
-        };
-    };
-
     template<bool isRequest>
     void failMatrix(char const* s, yield_context do_yield)
     {
@@ -169,20 +95,6 @@ public:
             test_parser<isRequest> p(fc);
             error_code ec;
             async_parse(fs, sb, p, do_yield[ec]);
-            if(! ec)
-                break;
-        }
-        BEAST_EXPECT(n < limit);
-        for(n = 0; n < limit; ++n)
-        {
-            streambuf sb;
-            sb.commit(buffer_copy(
-                sb.prepare(len), buffer(s, len)));
-            test::fail_counter fc{n};
-            test::string_istream ss{ios_, s};
-            message_parser<isRequest, fail_body, fields> p{fc};
-            error_code ec;
-            parse(ss, sb, p, ec);
             if(! ec)
                 break;
         }

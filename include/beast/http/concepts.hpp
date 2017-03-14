@@ -227,24 +227,19 @@ template<class T, class M>
 struct is_Reader<T, M, beast::detail::void_t<decltype(
     std::declval<typename T::mutable_buffers_type>(),
     std::declval<T>().init(
-        std::declval<boost::optional<std::uint64_t>>(),
-        std::declval<error_code&>()),
+        std::declval<boost::optional<std::uint64_t>>()),
     std::declval<T>().prepare(
-        std::declval<std::size_t>(),
-        std::declval<error_code&>()),
+        std::declval<std::size_t>()),
     std::declval<T>().commit(
-        std::declval<std::size_t>(),
-        std::declval<error_code&>()),
-    std::declval<T>().finish(
-        std::declval<error_code&>())
+        std::declval<std::size_t>()),
+    std::declval<T>().finish()
             )> > : std::integral_constant<bool,
     is_MutableBufferSequence<
         typename T::mutable_buffers_type>::value &&
     std::is_convertible<decltype(
         std::declval<T>().prepare(
-            std::declval<std::size_t>(),
-            std::declval<error_code&>())),
-        boost::optional<typename T::mutable_buffers_type>
+            std::declval<std::size_t>())),
+        typename T::mutable_buffers_type
             >::value>
 
 {
