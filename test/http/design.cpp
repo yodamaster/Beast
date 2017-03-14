@@ -20,8 +20,6 @@
 namespace beast {
 namespace http {
 
-/** Parse some HTTP/1 message data from a stream.
-*/
 template<
     class SyncReadStream,
     class DynamicBuffer,

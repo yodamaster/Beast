@@ -49,7 +49,7 @@ async_parse_some(AsyncReadStream& stream,
         header_parser<isRequest, Fields>& parser,
             ReadHandler&& handler);
 
-/** Start an asynchronous operation to parse an HTTP/1 header data from a stream.
+/** Start an asynchronous operation to parse an HTTP/1 header from a stream.
 */
 template<class AsyncReadStream, class DynamicBuffer,
     bool isRequest, class Fields, class ReadHandler>

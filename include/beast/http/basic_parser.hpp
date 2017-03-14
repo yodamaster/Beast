@@ -106,19 +106,30 @@ enum class parse_state
     header = 0,
 
     /// Expecting additional header octets
-    header_more = 1,
+    more_header = 1,
 
     /// Expecting one or more body octets
     body = 2,
 
     /// Expecting zero or more body octets followed by EOF
-    body_to_eof = 3,
+    body_or_eof = 3,
 
     /// Expecting additional chunk header octets
     chunk_header = 4,
 
     /// Expecting one or more chunk body octets
-    chunk_body = 5
+    chunk_body = 5,
+
+    /** The parsing is complete.
+
+        The parse is considered complete when the full header
+        is received and either the full body is received, or
+        the semantics of the message indicate that no body
+        is expected. This includes the case where the caller
+        has indicated to the parser that no body is expected,
+        for example when receiving a response to a HEAD request.
+    */
+    complete = 6
 };
 
 /** Information about the body or body chunk being parsed.
@@ -371,6 +382,17 @@ public:
     /// Set the @ref skip_body option.
     void
     set_option(skip_body const& opt);
+
+    /** Returns the current parser state.
+
+        The parser state indicates what octets the parser
+        expects to see next in the input stream.
+    */
+    parse_state
+    state() const
+    {
+        return state_;
+    }
 
     /** Returns `true` if the parser requires additional input.
 
