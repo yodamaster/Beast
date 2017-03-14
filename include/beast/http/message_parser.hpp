@@ -143,6 +143,24 @@ public:
         return std::move(m_);
     }
 
+    template<class DynamicBuffer>
+    typename reader_type::mutable_buffers_type
+    prepare(DynamicBuffer& dynabuf, std::size_t limit)
+    {
+        auto const n = this->remain();
+        if(n > limit)
+            return r_->prepare(limit);
+        return r_->prepare(static_cast<std::size_t>(n));
+    }
+
+    void
+    commit(std::size_t n)
+    {
+        BOOST_ASSERT(n <= this->remain());
+        r_->commit(n);
+        this->consume(n);
+    }
+
 private:
     friend class basic_parser<isRequest, message_parser>;
 
