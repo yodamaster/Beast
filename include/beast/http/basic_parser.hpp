@@ -410,6 +410,33 @@ public:
         will never produce additional input.
     */
     bool
+    need_buffer() const
+    {
+        switch(state_)
+        {
+        case parse_state::header:
+        case parse_state::more_header:
+        case parse_state::chunk_header:
+            return true;
+        default:
+            break;
+        }
+        return false;
+    }
+
+    /** Returns `true` if the parser requires additional input.
+
+        When this function returns `true`, the caller should
+        perform one of the following actions in order for the
+        parser to make forward progress:
+
+        @li Commit additional bytes to the stream buffer, then
+        call @ref write.
+
+        @li Call @ref write_eof to indicate that the stream
+        will never produce additional input.
+    */
+    bool
     need_more() const;
 
     /** Returns `true` if the message end is indicated by eof.

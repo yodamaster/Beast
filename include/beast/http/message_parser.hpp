@@ -107,22 +107,6 @@ public:
     message_parser(header_parser<
         isRequest, Fields>&& parser, Args&&... args);
 
-    bool
-    need_buffer() const
-    {
-        BOOST_ASSERT(state() != parse_state::complete);
-        switch(state())
-        {
-        case parse_state::header:
-        case parse_state::more_header:
-        case parse_state::chunk_header:
-            return true;
-        default:
-            break;
-        }
-        return false;
-    }
-
     /** Returns the parsed message.
 
         Depending on the progress of the parser, portions
@@ -175,14 +159,14 @@ public:
         if(n == 0)
             return;
         buffer_copy(
-            r_->prepare(len), dynabuf.data());
-        this->consume(len);
-        dynabuf.consume(len);
-        r_->commit(len);
+            r_->prepare(n), dynabuf.data());
+        this->consume(n);
+        dynabuf.consume(n);
+        r_->commit(n);
     }
 
     template<class DynamicBuffer>
-    typename mutable_buffers_type
+    mutable_buffers_type
     prepare(DynamicBuffer& dynabuf, std::size_t limit)
     {
         BOOST_ASSERT(limit > 0);

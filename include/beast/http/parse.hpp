@@ -16,7 +16,6 @@
 namespace beast {
 namespace http {
 
-#if 0
 /** Parse some HTTP/1 header data from a stream.
 */
 template<class SyncReadStream, class DynamicBuffer,
@@ -60,8 +59,6 @@ async_parse(AsyncReadStream& stream,
     DynamicBuffer& dynabuf,
         header_parser<isRequest, Fields>& parser,
             ReadHandler&& handler);
-
-#endif
 
 /** Parse some HTTP/1 message data from a stream.
 */

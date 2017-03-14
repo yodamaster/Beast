@@ -22,8 +22,6 @@ namespace http {
 
 namespace detail {
 
-#if 0
-
 template<class Stream, class DynamicBuffer,
     bool isRequest, class Fields, class Handler>
 class parse_some_header_op
@@ -310,8 +308,6 @@ operator()(error_code const& ec, bool again)
     d_.invoke(ec);
 }
 
-#endif
-
 //------------------------------------------------------------------------------
 
 template<class Stream,
@@ -499,8 +495,6 @@ upcall:
 
 //------------------------------------------------------------------------------
 
-#if 0
-
 template<class SyncReadStream, class DynamicBuffer,
     bool isRequest, class Fields>
 void
@@ -571,7 +565,7 @@ parse(SyncReadStream& stream, DynamicBuffer& dynabuf,
         parse_some(stream, dynabuf, parser, ec);
         if(ec)
             return;
-        if(parser.is_done())
+        if(parser.got_header())
             break;
     }
 }
@@ -618,8 +612,6 @@ async_parse(AsyncReadStream& stream,
     return completion.result.get();
 }
 
-#endif
-
 template<class SyncReadStream, class DynamicBuffer,
     bool isRequest, class Body, class Fields>
 void
@@ -633,7 +625,7 @@ parse_some(SyncReadStream& stream, DynamicBuffer& dynabuf,
         "DynamicBuffer requirements not met");
     BOOST_ASSERT(parser.need_more());
     BOOST_ASSERT(! parser.is_done());
-    if(parser.need_buffer())
+    if(parser.need_more())
     {
         auto used =
             parser.write(dynabuf.data(), ec);
