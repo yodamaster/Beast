@@ -17,17 +17,10 @@
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/error.hpp>
 #include <algorithm>
+#include <utility>
 
 namespace beast {
 namespace http {
-
-template<bool isRequest, class Derived>
-basic_parser<isRequest, Derived>::
-~basic_parser()
-{
-    if(buf_)
-        delete[] buf_;
-}
 
 template<bool isRequest, class Derived>
 template<class OtherDerived>
@@ -35,13 +28,13 @@ basic_parser<isRequest, Derived>::
 basic_parser(basic_parser<
         isRequest, OtherDerived>&& other)
     : len_(other.len_)
-    , buf_(other.buf_)
+    , buf_(std::move(other.buf_))
     , buf_len_(other.buf_len_)
     , skip_(other.skip_)
     , x_(other.x_)
     , f_(other.f_)
+    , state_(other.state_)
 {
-    other.buf_ = nullptr;
 }
 
 template<bool isRequest, class Derived>
@@ -316,15 +309,13 @@ maybe_flatten(
     if(len > buf_len_)
     {
         // reallocate
-        if(buf_)
-            delete[] buf_;
-        buf_ = new char[len];
+        buf_.reset(new char[len]);
         buf_len_ = len;
     }
     // flatten
     buffer_copy(
-        buffer(buf_, buf_len_), buffers);
-    return {buf_, buf_len_};
+        buffer(buf_.get(), buf_len_), buffers);
+    return {buf_.get(), buf_len_};
 }
 
 template<bool isRequest, class Derived>

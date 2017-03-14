@@ -14,6 +14,7 @@
 #include <boost/optional.hpp>
 #include <boost/assert.hpp>
 #include <boost/utility/string_ref.hpp>
+#include <memory>
 #include <utility>
 
 namespace beast {
@@ -91,6 +92,33 @@ struct skip_body
         : value(v)
     {
     }
+};
+
+/** Describes the parser's current state.
+
+    The state is expressed as the type of data that
+    @ref basic_parser is expecting to see in subsequently
+    provided octets.
+*/
+enum class parse_state
+{
+    /// Expecting the first header octets
+    header = 0,
+
+    /// Expecting additional header octets
+    header_more = 1,
+
+    /// Expecting one or more body octets
+    body = 2,
+
+    /// Expecting zero or more body octets followed by EOF
+    body_to_eof = 3,
+
+    /// Expecting additional chunk header octets
+    chunk_header = 4,
+
+    /// Expecting one or more chunk body octets
+    chunk_body = 5
 };
 
 /** Information about the body or body chunk being parsed.
@@ -275,11 +303,12 @@ class basic_parser
     static unsigned constexpr flagUpgrade               = 1<< 17;
 
     std::uint64_t len_;     // size of chunk or body
-    char* buf_ = nullptr;
+    std::unique_ptr<char[]> buf_;
     std::size_t buf_len_ = 0;
     std::size_t skip_ = 0;  // search from here
     std::size_t x_;         // scratch variable
     unsigned f_ = 0;        // flags
+    parse_state state_ = parse_state::header;
 
 protected:
     /// Default constructor
@@ -296,7 +325,7 @@ public:
     basic_parser& operator=(basic_parser const&) = delete;
 
     /// Destructor
-    ~basic_parser();
+    ~basic_parser() = default;
 
     /** Move constructor
 
