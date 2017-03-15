@@ -801,6 +801,22 @@ template<class SyncReadStream, class DynamicBuffer,
     bool isRequest, class Fields>
 void
 parse_some(SyncReadStream& stream, DynamicBuffer& dynabuf,
+    header_parser<isRequest, Fields>& parser)
+{
+    static_assert(is_SyncReadStream<SyncReadStream>::value,
+        "SyncReadStream requirements not met");
+    static_assert(is_DynamicBuffer<DynamicBuffer>::value,
+        "DynamicBuffer requirements not met");
+    error_code ec;
+    parse_some(stream, dynabuf, parser, ec);
+    if(ec)
+        throw system_error{ec};
+}
+
+template<class SyncReadStream, class DynamicBuffer,
+    bool isRequest, class Fields>
+void
+parse_some(SyncReadStream& stream, DynamicBuffer& dynabuf,
     header_parser<isRequest, Fields>& parser,
         error_code& ec)
 {
@@ -849,6 +865,22 @@ parse_some(SyncReadStream& stream, DynamicBuffer& dynabuf,
         }
         dynabuf.commit(bytes_transferred);
     }
+}
+
+template<class SyncReadStream, class DynamicBuffer,
+    bool isRequest, class Fields>
+void
+parse(SyncReadStream& stream, DynamicBuffer& dynabuf,
+    header_parser<isRequest, Fields>& parser)
+{
+    static_assert(is_SyncReadStream<SyncReadStream>::value,
+        "SyncReadStream requirements not met");
+    static_assert(is_DynamicBuffer<DynamicBuffer>::value,
+        "DynamicBuffer requirements not met");
+    error_code ec;
+    parse(stream, dynabuf, parser, ec);
+    if(ec)
+        throw system_error{ec};
 }
 
 template<class SyncReadStream, class DynamicBuffer,
@@ -912,6 +944,22 @@ async_parse(AsyncReadStream& stream,
         isRequest, Fields, decltype(completion.handler)>{
             completion.handler, stream, dynabuf, parser};
     return completion.result.get();
+}
+
+template<class SyncReadStream, class DynamicBuffer,
+    bool isRequest, class Body, class Fields>
+void
+parse_some(SyncReadStream& stream, DynamicBuffer& dynabuf,
+    message_parser<isRequest, Body, Fields>& parser)
+{
+    static_assert(is_SyncReadStream<SyncReadStream>::value,
+        "SyncReadStream requirements not met");
+    static_assert(is_DynamicBuffer<DynamicBuffer>::value,
+        "DynamicBuffer requirements not met");
+    error_code ec;
+    parse_some(stream, dynabuf, parser, ec);
+    if(ec)
+        throw system_error{ec};
 }
 
 template<class SyncReadStream, class DynamicBuffer,
@@ -1004,6 +1052,22 @@ template<class SyncReadStream, class DynamicBuffer,
     bool isRequest, class Body, class Fields>
 void
 parse(SyncReadStream& stream, DynamicBuffer& dynabuf,
+    message_parser<isRequest, Body, Fields>& parser)
+{
+    static_assert(is_SyncReadStream<SyncReadStream>::value,
+        "SyncReadStream requirements not met");
+    static_assert(is_DynamicBuffer<DynamicBuffer>::value,
+        "DynamicBuffer requirements not met");
+    error_code ec;
+    parse(stream, dynabuf, parser, ec);
+    if(ec)
+        throw system_error{ec};
+}
+
+template<class SyncReadStream, class DynamicBuffer,
+    bool isRequest, class Body, class Fields>
+void
+parse(SyncReadStream& stream, DynamicBuffer& dynabuf,
     message_parser<isRequest, Body, Fields>& parser,
         error_code& ec)
 {
@@ -1065,6 +1129,7 @@ async_parse(AsyncReadStream& stream,
 
 //------------------------------------------------------------------------------
 
+#if 0
 template<class SyncReadStream, class DynamicBuffer, class Parser>
 void
 parse(SyncReadStream& stream, DynamicBuffer& dynabuf, Parser& parser)
@@ -1151,6 +1216,7 @@ async_parse(AsyncReadStream& stream,
             completion.handler, stream, dynabuf, parser};
     return completion.result.get();
 }
+#endif
 
 } // http
 } // beast

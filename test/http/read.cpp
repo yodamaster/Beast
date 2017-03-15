@@ -29,8 +29,10 @@ class read_test
     , public test::enable_yield_to
 {
 public:
+#if 0
     template<bool isRequest>
-    void failMatrix(char const* s, yield_context do_yield)
+    void
+    failMatrix(char const* s, yield_context do_yield)
     {
         using boost::asio::buffer;
         using boost::asio::buffer_copy;
@@ -100,6 +102,7 @@ public:
         }
         BEAST_EXPECT(n < limit);
     }
+#endif
 
     void testThrow()
     {
@@ -117,6 +120,7 @@ public:
         }
     }
 
+#if 0
     void testFailures(yield_context do_yield)
     {
         char const* req[] = {
@@ -178,6 +182,7 @@ public:
         for(std::size_t i = 0; res[i]; ++i)
             failMatrix<false>(res[i], do_yield);
     }
+#endif
 
     void testRead(yield_context do_yield)
     {
@@ -278,7 +283,10 @@ public:
     {
         testThrow();
 
+#if 0
         yield_to(&read_test::testFailures, this);
+#endif
+
         yield_to(&read_test::testRead, this);
         yield_to(&read_test::testEof, this);
     }

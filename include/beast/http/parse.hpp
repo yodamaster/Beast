@@ -22,8 +22,24 @@ template<class SyncReadStream, class DynamicBuffer,
     bool isRequest, class Fields>
 void
 parse_some(SyncReadStream& stream, DynamicBuffer& dynabuf,
+    header_parser<isRequest, Fields>& parser);
+
+/** Parse some HTTP/1 header data from a stream.
+*/
+template<class SyncReadStream, class DynamicBuffer,
+    bool isRequest, class Fields>
+void
+parse_some(SyncReadStream& stream, DynamicBuffer& dynabuf,
     header_parser<isRequest, Fields>& parser,
         error_code& ec);
+
+/** Parse an HTTP/1 header from a stream.
+*/
+template<class SyncReadStream, class DynamicBuffer,
+    bool isRequest, class Fields>
+void
+parse(SyncReadStream& stream, DynamicBuffer& dynabuf,
+    header_parser<isRequest, Fields>& parser);
 
 /** Parse an HTTP/1 header from a stream.
 */
@@ -104,6 +120,7 @@ async_parse(AsyncReadStream& stream,
         message_parser<isRequest, Body, Fields>& parser,
             ReadHandler&& handler);
 
+#if 0
 /** Parse an object from a stream.
 
     This function synchronously reads from a stream and passes
@@ -234,6 +251,7 @@ typename async_completion<
 #endif
 async_parse(AsyncReadStream& stream, DynamicBuffer& dynabuf,
     Parser& parser, ReadHandler&& handler);
+#endif
 
 } // http
 } // beast
