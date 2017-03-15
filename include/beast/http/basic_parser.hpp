@@ -105,20 +105,17 @@ enum class parse_state
     /// Expecting one or more header octets
     header = 0,
 
-    /// Paused before reading the body
-    paused = 1,
-
     /// Expecting one or more body octets
-    body = 2,
+    body = 1,
 
     /// Expecting zero or more body octets followed by EOF
-    body_or_eof = 3,
+    body_or_eof = 2,
 
     /// Expecting additional chunk header octets
-    chunk_header = 4,
+    chunk_header = 3,
 
     /// Expecting one or more chunk body octets
-    chunk_body = 5,
+    chunk_body = 4,
 
     /** The parsing is complete.
 
@@ -129,7 +126,7 @@ enum class parse_state
         has indicated to the parser that no body is expected,
         for example when receiving a response to a HEAD request.
     */
-    complete = 6
+    complete = 5
 };
 
 /** Information about the body or body chunk being parsed.

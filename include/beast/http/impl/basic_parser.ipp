@@ -109,11 +109,13 @@ basic_parser<isRequest, Derived>::
 write(boost::asio::const_buffers_1 const& buffer,
     error_code& ec)
 {
+#if 0
     BOOST_ASSERT(
         state_ != parse_state::body &&
         state_ != parse_state::body_or_eof &&
         state_ != parse_state::chunk_body &&
         state_ != parse_state::complete);
+#endif
     BOOST_ASSERT(! is_done());
     using boost::asio::buffer_cast;
     using boost::asio::buffer_size;
@@ -121,9 +123,8 @@ write(boost::asio::const_buffers_1 const& buffer,
         buffer_cast<char const*>(*buffer.begin()),
             buffer_size(*buffer.begin())};
     auto s = s0;
-    if(! got_header())
+    if(state_ == parse_state::header)
     {
-        BOOST_ASSERT(state_ == parse_state::header);
         if(! s.empty())
             f_ |= flagGotSome;
         auto const n = parse_header(
@@ -690,21 +691,30 @@ do_header(int, std::true_type)
     if(f_ & flagSkipBody)
     {
         f_ |= flagMsgDone;
+        state_ = parse_state::complete;
     }
     else if(f_ & flagContentLength)
     {
         if(len_ > 0)
+        {
             f_ |= flagHasBody;
+            state_ = parse_state::body;
+        }
         else
+        {
             f_ |= flagMsgDone;
+            state_ = parse_state::complete;
+        }
     }
     else if(f_ & flagChunked)
     {
         f_ |= flagHasBody;
+        state_ = parse_state::chunk_header;
     }
     else
     {
         f_ |= flagMsgDone;
+        state_ = parse_state::complete;
     }
 }
 

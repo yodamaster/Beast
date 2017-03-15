@@ -836,14 +836,16 @@ parse_some(SyncReadStream& stream, DynamicBuffer& dynabuf,
         "SyncReadStream requirements not met");
     static_assert(is_DynamicBuffer<DynamicBuffer>::value,
         "DynamicBuffer requirements not met");
-    BOOST_ASSERT(parser.need_more());
-    BOOST_ASSERT(! parser.is_done());
-    auto used =
-        parser.write(dynabuf.data(), ec);
-    if(ec)
-        return;
-    dynabuf.consume(used);
-    if(parser.need_more())
+    BOOST_ASSERT(parser.state() == parse_state::header);
+    if(dynabuf.size() > 0)
+    {
+        auto const used =
+            parser.write(dynabuf.data(), ec);
+        if(ec)
+            return;
+        dynabuf.consume(used);
+    }
+    if(parser.state() == parse_state::header)
     {
         boost::optional<typename
             DynamicBuffer::mutable_buffers_type> mb;
@@ -917,7 +919,7 @@ parse(SyncReadStream& stream, DynamicBuffer& dynabuf,
         parse_some(stream, dynabuf, parser, ec);
         if(ec)
             return;
-        if(parser.got_header())
+        if(parser.state() != parse_state::header)
             break;
     }
 }
