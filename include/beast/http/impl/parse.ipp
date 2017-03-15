@@ -186,6 +186,12 @@ operator()(
             if(ec == boost::asio::error::eof)
             {
                 BOOST_ASSERT(bytes_transferred == 0);
+                if(! d.p.got_some())
+                {
+                    // deliver EOF to handler
+                    goto upcall;
+                }
+
                 // Caller will see eof on next read.
                 ec = {};
                 d.p.write_eof(ec);
@@ -481,6 +487,12 @@ operator()(error_code ec,
             if(ec == boost::asio::error::eof)
             {
                 BOOST_ASSERT(bytes_transferred == 0);
+                if(! d.p.got_some())
+                {
+                    // deliver EOF to handler
+                    goto upcall;
+                }
+
                 // Caller will see eof on next read.
                 ec = {};
                 d.p.write_eof(ec);
@@ -851,19 +863,25 @@ parse_some(SyncReadStream& stream, DynamicBuffer& dynabuf,
             stream.read_some(*mb, ec);
         if(ec == boost::asio::error::eof)
         {
-            dynabuf.commit(bytes_transferred);
-            // Caller will see eof on next read.
-            ec = {};
-            parser.write_eof(ec);
-            if(ec)
-                return;
-            BOOST_ASSERT(! parser.need_more());
+            BOOST_ASSERT(bytes_transferred == 0);
+            if(parser.got_some())
+            {
+                // Caller will see eof on next read.
+                ec = {};
+                parser.write_eof(ec);
+                if(ec)
+                    return;
+                BOOST_ASSERT(! parser.need_more());
+            }
         }
         else if(ec)
         {
             return;
         }
-        dynabuf.commit(bytes_transferred);
+        else
+        {
+            dynabuf.commit(bytes_transferred);
+        }
     }
 }
 
@@ -1002,19 +1020,25 @@ parse_some(SyncReadStream& stream, DynamicBuffer& dynabuf,
                 stream.read_some(*mb, ec);
             if(ec == boost::asio::error::eof)
             {
-                dynabuf.commit(bytes_transferred);
-                // Caller will see eof on next read.
-                ec = {};
-                parser.write_eof(ec);
-                if(ec)
-                    return;
-                BOOST_ASSERT(! parser.need_more());
+                BOOST_ASSERT(bytes_transferred == 0);
+                if(parser.got_some())
+                {
+                    // Caller will see eof on next read.
+                    ec = {};
+                    parser.write_eof(ec);
+                    if(ec)
+                        return;
+                    BOOST_ASSERT(! parser.need_more());
+                }
             }
             else if(ec)
             {
                 return;
             }
-            dynabuf.commit(bytes_transferred);
+            else
+            {
+                dynabuf.commit(bytes_transferred);
+            }
         }
     }
     else

@@ -102,26 +102,23 @@ struct skip_body
 */
 enum class parse_state
 {
-    /// Expecting the first header octets
+    /// Expecting one or more header octets
     header = 0,
 
-    /// Expecting additional header octets
-    more_header = 1,
-
     /// Paused before reading the body
-    paused = 2,
+    paused = 1,
 
     /// Expecting one or more body octets
-    body = 3,
+    body = 2,
 
     /// Expecting zero or more body octets followed by EOF
-    body_or_eof = 4,
+    body_or_eof = 3,
 
     /// Expecting additional chunk header octets
-    chunk_header = 5,
+    chunk_header = 4,
 
     /// Expecting one or more chunk body octets
-    chunk_body = 6,
+    chunk_body = 5,
 
     /** The parsing is complete.
 
@@ -132,7 +129,7 @@ enum class parse_state
         has indicated to the parser that no body is expected,
         for example when receiving a response to a HEAD request.
     */
-    complete = 7
+    complete = 6
 };
 
 /** Information about the body or body chunk being parsed.
@@ -415,13 +412,19 @@ public:
         switch(state_)
         {
         case parse_state::header:
-        case parse_state::more_header:
         case parse_state::chunk_header:
             return true;
         default:
             break;
         }
         return false;
+    }
+
+    /// Returns `true` if the parser has received at least one byte of input.
+    bool
+    got_some() const
+    {
+        return (f_ & flagGotSome) != 0;
     }
 
     /** Returns `true` if the parser requires additional input.

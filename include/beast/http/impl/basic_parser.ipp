@@ -15,7 +15,6 @@
 #include <beast/http/error.hpp>
 #include <beast/http/rfc7230.hpp>
 #include <boost/asio/buffer.hpp>
-#include <boost/asio/error.hpp>
 #include <algorithm>
 #include <utility>
 
@@ -111,10 +110,10 @@ write(boost::asio::const_buffers_1 const& buffer,
     error_code& ec)
 {
     BOOST_ASSERT(
-        state() != parse_state::body &&
-        state() != parse_state::body_or_eof &&
-        state() != parse_state::chunk_body &&
-        state() != parse_state::complete);
+        state_ != parse_state::body &&
+        state_ != parse_state::body_or_eof &&
+        state_ != parse_state::chunk_body &&
+        state_ != parse_state::complete);
     BOOST_ASSERT(! is_done());
     using boost::asio::buffer_cast;
     using boost::asio::buffer_size;
@@ -124,6 +123,7 @@ write(boost::asio::const_buffers_1 const& buffer,
     auto s = s0;
     if(! got_header())
     {
+        BOOST_ASSERT(state_ == parse_state::header);
         if(! s.empty())
             f_ |= flagGotSome;
         auto const n = parse_header(
@@ -202,11 +202,7 @@ void
 basic_parser<isRequest, Derived>::
 write_eof(error_code& ec)
 {
-    if(! (f_ & flagGotSome))
-    {
-        ec = boost::asio::error::eof;
-        return;
-    }
+    BOOST_ASSERT(got_some());
     if(! (f_ & flagGotHeader))
     {
         ec = error::partial_message;
