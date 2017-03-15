@@ -53,8 +53,12 @@ async_parse_some(AsyncReadStream& stream,
 */
 template<class AsyncReadStream, class DynamicBuffer,
     bool isRequest, class Fields, class ReadHandler>
+#if GENERATING_DOCS
+void_or_deduced
+#else
 typename async_completion<
     ReadHandler, void(error_code)>::result_type
+#endif
 async_parse(AsyncReadStream& stream,
     DynamicBuffer& dynabuf,
         header_parser<isRequest, Fields>& parser,
@@ -77,6 +81,28 @@ void
 parse(SyncReadStream& stream, DynamicBuffer& dynabuf,
     message_parser<isRequest, Body, Fields>& parser,
         error_code& ec);
+
+/** Start an asynchronous operation to parse some HTTP/1 message data from a stream.
+*/
+template<class AsyncReadStream, class DynamicBuffer,
+    bool isRequest, class Body, class Fields, class ReadHandler>
+typename async_completion<
+    ReadHandler, void(error_code)>::result_type
+async_parse_some(AsyncReadStream& stream,
+    DynamicBuffer& dynabuf,
+        message_parser<isRequest, Body, Fields>& parser,
+            ReadHandler&& handler);
+
+/** Start an asynchronous operation to parse an HTTP/1 message from a stream.
+*/
+template<class AsyncReadStream, class DynamicBuffer,
+    bool isRequest, class Body, class Fields, class ReadHandler>
+typename async_completion<
+    ReadHandler, void(error_code)>::result_type
+async_parse(AsyncReadStream& stream,
+    DynamicBuffer& dynabuf,
+        message_parser<isRequest, Body, Fields>& parser,
+            ReadHandler&& handler);
 
 /** Parse an object from a stream.
 
