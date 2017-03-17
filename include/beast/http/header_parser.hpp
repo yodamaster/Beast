@@ -139,7 +139,7 @@ private:
     }
 
     void
-    on_begin_body(error_code& ec)
+    on_begin_body()
     {
     }
 

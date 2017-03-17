@@ -101,11 +101,9 @@ public:
     }
 
     void
-    on_begin_body(error_code& ec)
+    on_begin_body()
     {
         got_on_begin_body = true;
-        if(fc_)
-            fc_->fail(ec);
     }
 
     void

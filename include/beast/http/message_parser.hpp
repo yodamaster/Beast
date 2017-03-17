@@ -153,6 +153,7 @@ public:
     void
     copy(DynamicBuffer& dynabuf)
     {
+        this->maybe_begin_body();
         using boost::asio::buffer_copy;
         auto const n = (std::min)(
             dynabuf.size(), this->remain());
@@ -171,6 +172,7 @@ public:
     {
         BOOST_ASSERT(limit > 0);
         BOOST_ASSERT(this->remain() > 0);
+        this->maybe_begin_body();
         auto const n = (std::min)(
             static_cast<std::size_t>(
                 this->remain()), limit);
@@ -226,7 +228,7 @@ private:
     }
 
     void
-    on_begin_body(error_code&)
+    on_begin_body()
     {
         r_.emplace(m_);
         r_->init(this->content_length());

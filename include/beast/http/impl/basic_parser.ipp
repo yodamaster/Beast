@@ -152,13 +152,7 @@ write(boost::asio::const_buffers_1 const& buffer,
             flagMsgDone))
         goto done;
 
-    if(! (f_ & flagBeginBody))
-    {
-        impl().on_begin_body(ec);
-        if(ec)
-            return 0;
-        f_ |= flagBeginBody;
-    }
+    maybe_begin_body();
 
     if(f_ & flagChunked)
     {
@@ -281,6 +275,18 @@ split(bool value)
             if(f_ & flagHasBody)
                 f_ &= ~flagMsgDone;
         }
+    }
+}
+
+template<bool isRequest, class Derived>
+void
+basic_parser<isRequest, Derived>::
+maybe_begin_body()
+{
+    if(! (f_ & flagBeginBody))
+    {
+        impl().on_begin_body();
+        f_ |= flagBeginBody;
     }
 }
 

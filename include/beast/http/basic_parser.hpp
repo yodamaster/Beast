@@ -218,7 +218,7 @@ struct body_info
         // an indicated body of zero length.
         //
         void
-        on_begin_body(error_code& ec);
+        on_begin_body();
 
         // Called at the beginning of each chunk and final
         // chunk, when Transfer-Encoding specifies chunked.
@@ -315,10 +315,11 @@ class basic_parser
     std::size_t buf_len_ = 0;
     std::size_t skip_ = 0;  // search from here
     std::size_t x_;         // scratch variable
-    unsigned f_ = 0;        // flags
     parse_state state_ = parse_state::header;
 
 protected:
+    unsigned f_ = 0;        // flags
+
     /// Default constructor
     basic_parser() = default;
 
@@ -669,6 +670,9 @@ protected:
     */
     void
     split(bool value);
+
+    void
+    maybe_begin_body();
 
 private:
     inline
